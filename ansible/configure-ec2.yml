@@ -1,0 +1,43 @@
+---
+- name: Playbook to create a user with sudo access
+  hosts: "{{ target_host }}"
+  become: yes
+  become_user: root
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Check if zsh is installed
+      command: "zsh --version"
+      register: zsh_check
+      ignore_errors: yes
+
+    - name: Install zsh if not installed
+      apt:
+        name: zsh
+        state: present
+      when: zsh_check.rc != 0
+
+    - name: Check if user is already created
+      command: getent passwd ak
+      register: user_check
+      ignore_errors: yes
+
+    - name: User creation
+      user:
+        name: ak
+        password: "$6$7zJTljSzDiaJa3n2$VyQ5TFjQFdgyjbHXLMO3fUMtOCu5QZ48YOAkLGywFZbSg4t7kFqfgBvNWZoDJTYVsF11QRYwVwPtIhP8JeMqR/"
+        shell: /usr/bin/zsh
+        comment: "Muhammad Abdullah Khabir"
+        append: true
+        groups: sudo
+        state: present
+      when: user_check.rc != 0
+
+    - name: Add SSH public key to authorized_keys
+      ansible.posix.authorized_key:
+        user: ak
+        state: present
+        key: https://github.com/Awan.keys
